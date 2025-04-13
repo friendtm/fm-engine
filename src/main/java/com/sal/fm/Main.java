@@ -7,8 +7,12 @@ import com.sal.fm.enums.Tactic;
 import com.sal.fm.model.*;
 import com.sal.fm.manager.SaveManager;
 
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Scanner;
+import java.util.TreeMap;
+import java.util.stream.Collectors;
 
 public class Main {
     public static void main(String[] args) {
@@ -37,7 +41,8 @@ public class Main {
             System.out.println("5. Print Team A Players");
             System.out.println("6. Print Team B Players");
             System.out.println("7. Print Both Teams");
-            System.out.println("8. Exit Game");
+            System.out.println("8. Create League");
+            System.out.println("9. Exit Game");
             System.out.print("Choose an option: ");
 
             int choice = scanner.nextInt();
@@ -70,6 +75,20 @@ public class Main {
                     printLineup(teamB, "B");
                 }
                 case 8 -> {
+                    List<Team> my12Teams = generateLeagueTeams();
+                    League league = new League(my12Teams);
+
+                    league.getMatches().stream()
+                            .sorted(Comparator.comparingInt(Match::getRound))
+                            .collect(Collectors.groupingBy(Match::getRound, TreeMap::new, Collectors.toList()))
+                            .forEach((round, matchList) -> {
+                                String run = (round <= 11) ? "Run 1" : "Run 2";
+                                System.out.println("\n=== Matchday " + round + " [" + run + "] ===");
+                                matchList.forEach(match ->
+                                        System.out.println(match.getHomeTeam().getName() + " vs " + match.getAwayTeam().getName()));
+                            });
+                }
+                case 9 -> {
                     SaveManager.save(teamA, teamB);
                     System.out.println("Progress saved. Goodbye!");
                     running = false;
@@ -110,5 +129,24 @@ public class Main {
         System.out.println("Match Started!");
         System.out.println();
         match.startMatch();
+    }
+
+    private static List<Team> generateLeagueTeams() {
+        List<Team> teams = new ArrayList<>();
+        String[] teamNames = {
+                "Red Wolves", "Blue Hawks", "Green Eagles", "Black Panthers",
+                "Silver Foxes", "Golden Bulls", "White Tigers", "Crimson Bears",
+                "Shadow Lions", "Iron Rhinos", "Storm Crows", "Fire Serpents"
+        };
+
+        for (int i = 0; i < 12; i++) {
+            Tactic tactic = (i % 2 == 0) ? Tactic.DIAMOND : Tactic.SQUARE; // Alternate tactics
+            Team team = new Team(teamNames[i], tactic);
+            PlayerGenerator.generateTeamPlayers().forEach(team::addPlayer);
+            LineupBuilder.generateLineup(team);
+            teams.add(team);
+        }
+
+        return teams;
     }
 }

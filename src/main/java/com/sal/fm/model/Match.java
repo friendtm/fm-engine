@@ -14,10 +14,13 @@ import java.util.stream.Collectors;
  * and tracks the score of the match.
  */
 public class Match {
-    private Team teamA; // First team in the match
-    private Team teamB; // Second team in the match
+    private Team homeTeam; // First team in the match
+    private Team awayTeam; // Second team in the match
     private int teamAScore = 0; // Score for team A
     private int teamBScore = 0; // Score for team B
+
+    private int round;
+    private boolean isPlayed;
 
     private int currentMinute = 0;
 
@@ -28,12 +31,13 @@ public class Match {
     /**
      * Constructor for Match. Initializes the two teams participating in the match.
      *
-     * @param teamA The first team
-     * @param teamB The second team
+     * @param homeTeam The first team
+     * @param awayTeam The second team
      */
-    public Match(Team teamA, Team teamB) {
-        this.teamA = teamA;
-        this.teamB = teamB;
+    public Match(Team homeTeam, Team awayTeam) {
+        this.homeTeam = homeTeam;
+        this.awayTeam = awayTeam;
+        this.isPlayed = false;
     }
 
     /**
@@ -78,8 +82,8 @@ public class Match {
      */
     private void simulateShotOnGoal() {
         // Randomly select attacking and defending teams
-        Team attackingTeam = random.nextInt(2) == 0 ? teamA : teamB;
-        Team defendingTeam = attackingTeam == teamA ? teamB : teamA;
+        Team attackingTeam = random.nextInt(2) == 0 ? homeTeam : awayTeam;
+        Team defendingTeam = attackingTeam == homeTeam ? awayTeam : homeTeam;
 
         // Filter the starting lineup to get players who are not goalkeepers for the attacking team
         List<Player> shooters = attackingTeam.getStartingLineup().stream()
@@ -127,7 +131,7 @@ public class Match {
      */
     private void scoreGoal(Player shooter, Team team) {
         // Increment the appropriate team's score
-        if (team == teamA) {
+        if (team == homeTeam) {
             teamAScore++;
         } else {
             teamBScore++;
@@ -165,7 +169,7 @@ public class Match {
     private void displayFinalScore() {
         logger.log(currentMinute, "Match Ended!"); // Log that the match has ended
         // Log the final score for both teams
-        logger.log(currentMinute, teamA.getName() + ": " + teamAScore + " - " + teamBScore + " : " + teamB.getName());
+        logger.log(currentMinute, homeTeam.getName() + ": " + teamAScore + " - " + teamBScore + " : " + awayTeam.getName());
     }
 
     /**
@@ -178,9 +182,39 @@ public class Match {
         return p.getSkill() + "|" + p.getPosition() + "|" + p.getName();
     }
 
-    /**
-     * Logs a message to the console (simulating a logging system).
-     *
-     * @param message The message to log
-     */
+    public Team getHomeTeam() {
+        return homeTeam;
+    }
+
+    public Team getAwayTeam() {
+        return awayTeam;
+    }
+
+    public int getRound() {
+        return round;
+    }
+
+    public void setRound(int round) {
+        this.round = round;
+    }
+
+    public boolean isPlayed() {
+        return isPlayed;
+    }
+
+    public void markAsPlayed() {
+        this.isPlayed = true;
+    }
+
+    @Override
+    public String toString() {
+        String run = (round <= 11) ? "Run 1" : "Run 2";
+        return String.format(
+                "Matchday %02d [%s]: %s vs %s",
+                round,
+                run,
+                homeTeam.getName(),
+                awayTeam.getName()
+        );
+    }
 }
