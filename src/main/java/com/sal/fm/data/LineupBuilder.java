@@ -14,60 +14,189 @@ import java.util.stream.Collectors;
  */
 public class LineupBuilder {
 
-    /**
-     * Generates a starting lineup and substitutes for the given team based on its tactic.
-     *
-     * @param team The team for which to generate the lineup.
-     */
     public static void generateLineup(Team team) {
         Tactic tactic = team.getTactic();
-        List<Player> players = new ArrayList<>(team.getPlayers());
+        List<Player> allPlayers = new ArrayList<>(team.getPlayers());
 
-        validateTeamRoster(players, tactic); // 👈 Run validations
-
-        List<Player> gks = filterAndSort(players, Position.GOALKEEPER);
-        List<Player> fixos = filterAndSort(players, Position.FIXO);
-        List<Player> wingers = filterAndSort(players, Position.WINGER);
-        List<Player> pivots = filterAndSort(players, Position.PIVOT);
+        validateTeamRoster(allPlayers);
 
         List<Player> startingLineup = new ArrayList<>();
-        List<Player> substitutes = new ArrayList<>();
+        List<Player> substitutes;
 
-        Player gk = gks.remove(0);
+        // Sort players by position and rating
+        List<Player> gks = filterAndSort(allPlayers, Position.GOALKEEPER);
+        List<Player> fixos = filterAndSort(allPlayers, Position.FIXO);
+        List<Player> wingers = filterAndSort(allPlayers, Position.WINGER);
+        List<Player> pivots = filterAndSort(allPlayers, Position.PIVOT);
+
+        Set<String> selectedIds = new HashSet<>();
+
+        // 1. Pick best goalkeeper
+        Player gk = extractTop(gks);
         startingLineup.add(gk);
+        selectedIds.add(gk.getId());
 
-        switch (tactic) {
-            case DIAMOND:
-                startingLineup.add(extractTop(fixos));   // Defender
-                startingLineup.add(extractTop(wingers)); // Midfielder 1
-                startingLineup.add(extractTop(wingers)); // Midfielder 2
-                startingLineup.add(extractTop(pivots));  // Forward
-                break;
+        // 2. Build formation-specific lineup
+        List<Player> rolePlayers = switch (tactic) {
+            case DIAMOND -> buildDiamondLineup(fixos, wingers, pivots, selectedIds);
+            case SQUARE -> buildSquareLineup(fixos, wingers, pivots, selectedIds);
+        };
 
-            case SQUARE:
-                startingLineup.add(getBestFrom(fixos, wingers));  // Back 1
-                startingLineup.add(getBestFrom(fixos, wingers));  // Back 2
-                startingLineup.add(getBestFrom(wingers, pivots)); // Front 1
-                startingLineup.add(getBestFrom(wingers, pivots)); // Front 2
-                break;
-        }
+        startingLineup.addAll(rolePlayers);
+        selectedIds.addAll(rolePlayers.stream().map(Player::getId).toList());
 
-        substitutes.addAll(gks);
-        substitutes.addAll(fixos);
-        substitutes.addAll(wingers);
-        substitutes.addAll(pivots);
+        // 3. Substitutes: all unselected players
+        substitutes = allPlayers.stream()
+                .filter(p -> !selectedIds.contains(p.getId()))
+                .collect(Collectors.toList());
 
         team.setStartingLineup(startingLineup);
         team.setSubstitutes(substitutes);
     }
 
-    /**
-     * Filters players by a given position and sorts them by overall rating in descending order.
-     *
-     * @param players The list of players to filter.
-     * @param pos     The position to filter by.
-     * @return A sorted list of players matching the position.
-     */
+    private static List<Player> buildDiamondLineup(List<Player> fixos, List<Player> wingers, List<Player> pivots, Set<String> selectedIds) {
+        List<Player> lineup = new ArrayList<>();
+
+        // 1. FIXO
+        List<Player> availableFixos = fixos.stream()
+                .filter(p -> !selectedIds.contains(p.getId()))
+                .sorted(Comparator.comparingInt(Player::getOverallRating).reversed())
+                .toList();
+
+        Player fixo = availableFixos.get(0);
+        lineup.add(fixo);
+        selectedIds.add(fixo.getId());
+
+        // 2. W1 and W2 (from wingers + pivots, must include at least 1 winger)
+        List<Player> wingCandidates = new ArrayList<>();
+        wingers.stream()
+                .filter(p -> !selectedIds.contains(p.getId()))
+                .forEach(wingCandidates::add);
+        pivots.stream()
+                .filter(p -> !selectedIds.contains(p.getId()))
+                .forEach(wingCandidates::add);
+
+        wingCandidates.sort(Comparator.comparingInt(Player::getOverallRating).reversed());
+
+        Player w1 = wingCandidates.get(0);
+        Player w2 = wingCandidates.get(1);
+
+        if (!(w1.getPosition() == Position.WINGER || w2.getPosition() == Position.WINGER)) {
+            // Force a winger into the lineup
+            List<Player> availableWingers = wingers.stream()
+                    .filter(p -> !selectedIds.contains(p.getId()))
+                    .sorted(Comparator.comparingInt(Player::getOverallRating).reversed())
+                    .toList();
+
+            w1 = availableWingers.get(0);
+            final String w1Id = w1.getId();
+            w2 = wingCandidates.stream()
+                    .filter(p -> !p.getId().equals(w1Id))
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalStateException("Not enough candidates for winger roles."));
+        }
+
+        lineup.add(w1);
+        lineup.add(w2);
+        selectedIds.add(w1.getId());
+        selectedIds.add(w2.getId());
+
+        // 3. Pivot (best of remaining pivots or wingers)
+        List<Player> pivotCandidates = new ArrayList<>();
+        pivots.stream()
+                .filter(p -> !selectedIds.contains(p.getId()))
+                .forEach(pivotCandidates::add);
+        wingers.stream()
+                .filter(p -> !selectedIds.contains(p.getId()))
+                .forEach(pivotCandidates::add);
+
+        pivotCandidates.sort(Comparator.comparingInt(Player::getOverallRating).reversed());
+
+        if (pivotCandidates.isEmpty()) {
+            throw new IllegalStateException("No valid player available for pivot.");
+        }
+
+        Player pivot = pivotCandidates.get(0);
+        lineup.add(pivot);
+        selectedIds.add(pivot.getId());
+
+        return lineup;
+    }
+
+    private static List<Player> buildSquareLineup(List<Player> fixos, List<Player> wingers, List<Player> pivots, Set<String> selectedIds) {
+        List<Player> lineup = new ArrayList<>();
+
+        // 1. Back Line (B1 and B2): best 2 from fixos + pivots
+        List<Player> backCandidates = new ArrayList<>();
+        fixos.stream()
+                .filter(p -> !selectedIds.contains(p.getId()))
+                .forEach(backCandidates::add);
+        pivots.stream()
+                .filter(p -> !selectedIds.contains(p.getId()))
+                .forEach(backCandidates::add);
+
+        backCandidates.sort(Comparator.comparingInt(Player::getOverallRating).reversed());
+
+        Player b1 = backCandidates.get(0);
+        Player b2 = backCandidates.get(1);
+
+        lineup.addAll(List.of(b1, b2));
+        selectedIds.addAll(List.of(b1.getId(), b2.getId()));
+
+        // 2. Front Line (W1 and W2): best 2 from wingers + pivots (must include at least 1 winger)
+        List<Player> frontCandidates = new ArrayList<>();
+        wingers.stream()
+                .filter(p -> !selectedIds.contains(p.getId()))
+                .forEach(frontCandidates::add);
+        pivots.stream()
+                .filter(p -> !selectedIds.contains(p.getId()))
+                .forEach(frontCandidates::add);
+
+        frontCandidates.sort(Comparator.comparingInt(Player::getOverallRating).reversed());
+
+        if (frontCandidates.size() < 2) {
+            throw new IllegalStateException("Not enough players for front line.");
+        }
+
+        Player f1 = frontCandidates.get(0);
+        Player f2 = frontCandidates.get(1);
+
+        // Ensure at least one winger
+        if (!(f1.getPosition() == Position.WINGER || f2.getPosition() == Position.WINGER)) {
+            List<Player> availableWingers = wingers.stream()
+                    .filter(p -> !selectedIds.contains(p.getId()))
+                    .sorted(Comparator.comparingInt(Player::getOverallRating).reversed())
+                    .toList();
+
+            if (availableWingers.isEmpty()) {
+                throw new IllegalStateException("Square formation requires at least one WINGER.");
+            }
+
+            Player forcedWinger = availableWingers.get(0);
+
+            // Replace the lower-rated of f1/f2 with the winger
+            if (f1.getOverallRating() < f2.getOverallRating()) {
+                f1 = forcedWinger;
+            } else {
+                f2 = forcedWinger;
+            }
+        }
+
+        lineup.addAll(List.of(f1, f2));
+        selectedIds.addAll(List.of(f1.getId(), f2.getId()));
+
+        return lineup;
+    }
+
+    private static Player getBestAvailable(List<Player> list1, List<Player> list2) {
+        Player top1 = list1.isEmpty() ? null : list1.get(0);
+        Player top2 = list2.isEmpty() ? null : list2.get(0);
+
+        if (top1 == null) return top2;
+        if (top2 == null) return top1;
+        return top1.getOverallRating() >= top2.getOverallRating() ? top1 : top2;
+    }
+
     private static List<Player> filterAndSort(List<Player> players, Position pos) {
         return players.stream()
                 .filter(p -> p.getPosition() == pos)
@@ -75,48 +204,15 @@ public class LineupBuilder {
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Removes and returns the top-rated player from the list.
-     *
-     * @param list The list to extract the player from.
-     * @return The highest-rated player in the list.
-     */
     private static Player extractTop(List<Player> list) {
         if (list.isEmpty()) throw new IllegalStateException("Not enough players for formation.");
         return list.remove(0);
     }
 
-    /**
-     * Selects the best player from two combined position lists and removes them from the original list.
-     *
-     * @param list1 First list of players (e.g., FIXO or WINGER).
-     * @param list2 Second list of players (e.g., WINGER or PIVOT).
-     * @return The highest-rated player from both lists.
-     */
-    private static Player getBestFrom(List<Player> list1, List<Player> list2) {
-        List<Player> combined = new ArrayList<>(list1);
-        combined.addAll(list2);
-
-        if (combined.isEmpty()) throw new IllegalStateException("No players available for this role.");
-
-        // Sort combined list by rating
-        combined.sort(Comparator.comparingInt(Player::getOverallRating).reversed());
-
-        // Get the best-rated player
-        Player best = combined.get(0);
-
-        // Remove the player from whichever original list they belong to
-        if (!list1.remove(best)) list2.remove(best);
-
-        return best;
-    }
-
-    private static void validateTeamRoster(List<Player> players, Tactic tactic) {
-        if (players.size() < 5) {
+    private static void validateTeamRoster(List<Player> players) {
+        if (players.size() < 5)
             throw new IllegalArgumentException("A team must have at least 5 players.");
-        }
 
-        // Check for duplicates
         Set<String> uniqueIds = new HashSet<>();
         for (Player p : players) {
             if (!uniqueIds.add(p.getId())) {
@@ -125,24 +221,16 @@ public class LineupBuilder {
         }
 
         long gkCount = players.stream().filter(p -> p.getPosition() == Position.GOALKEEPER).count();
-        if (gkCount == 0) {
+        if (gkCount == 0)
             throw new IllegalArgumentException("Team must have at least one goalkeeper.");
-        }
 
-        long fieldPlayers = players.size() - gkCount;
-        if (fieldPlayers < 4) {
+        if ((players.size() - gkCount) < 4)
             throw new IllegalArgumentException("Team must have at least 4 field players.");
-        }
 
-        // Optional warning
-        Map<Position, Long> countByPosition = players.stream()
-                .collect(Collectors.groupingBy(Player::getPosition, Collectors.counting()));
+        long pivotCount = players.stream().filter(p -> p.getPosition() == Position.PIVOT).count();
+        long wingerCount = players.stream().filter(p -> p.getPosition() == Position.WINGER).count();
 
-        for (Position pos : Position.values()) {
-            countByPosition.putIfAbsent(pos, 0L);
-        }
-
-        if (countByPosition.get(Position.PIVOT) == 0 || countByPosition.get(Position.WINGER) < 2) {
+        if (pivotCount == 0 || wingerCount < 2) {
             System.out.println("[Warning] Unbalanced squad: consider adding more PIVOTS or WINGERS.");
         }
     }

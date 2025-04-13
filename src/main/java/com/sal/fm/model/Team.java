@@ -3,6 +3,7 @@ package com.sal.fm.model;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.sal.fm.enums.Tactic;
 
 public class Team {
@@ -15,6 +16,12 @@ public class Team {
     public Team(String name, Tactic tactic) {
         this.name = name;
         this.tactic = tactic;
+        this.players = new ArrayList<>();
+        this.startingLineup = new ArrayList<>();
+        this.substitutes = new ArrayList<>();
+    }
+
+    public Team() {
         this.players = new ArrayList<>();
         this.startingLineup = new ArrayList<>();
         this.substitutes = new ArrayList<>();
@@ -33,6 +40,7 @@ public class Team {
 
     public Tactic getTactic() { return tactic; }
 
+    @JsonIgnore
     public int getTeamStrength() { return players.stream().mapToInt(Player::getOverallRating).sum(); }
 
     public void setStartingLineup(List<Player> startingLineup) { this.startingLineup = startingLineup; }

@@ -1,5 +1,6 @@
 package com.sal.fm.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.sal.fm.enums.Position;
 
 import java.util.UUID;
@@ -25,6 +26,11 @@ public class Player {
         this.isInjured = false;
     }
 
+    public Player() {
+        this.id = UUID.randomUUID().toString();
+    }
+
+    @JsonIgnore
     public int getOverallRating(){
         return (int)((skill * 0.6) + (stamina * 0.4));
     }
@@ -60,7 +66,7 @@ public class Player {
         return fitness;
     }
 
-    public boolean isInjured() {
+    public boolean getIsInjured() {
         return isInjured;
     }
 
