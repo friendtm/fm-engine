@@ -2,6 +2,7 @@ package com.sal.fm.model;
 
 import com.sal.fm.enums.Position;
 import com.sal.fm.enums.MatchEvent;
+import com.sal.fm.util.MatchLogger;
 
 import java.util.List;
 import java.util.Random;
@@ -18,7 +19,10 @@ public class Match {
     private int teamAScore = 0; // Score for team A
     private int teamBScore = 0; // Score for team B
 
+    private int currentMinute = 0;
+
     private final Random random = new Random(); // Random object to simulate events in the game
+    private final MatchLogger logger = new MatchLogger(); // Logger object to control logs during a Match
     private static final int MATCH_DURATION_MINUTES = 40; // Total duration of the match in minutes
 
     /**
@@ -36,7 +40,7 @@ public class Match {
      * Starts the match simulation. Runs the match for a set duration and displays the final score.
      */
     public void startMatch() {
-        int currentMinute = 0; // Counter to track the current minute of the match
+        currentMinute = 0; // Counter to track the current minute of the match
 
         // Simulate the match until the match duration has passed
         while (currentMinute < MATCH_DURATION_MINUTES) {
@@ -66,7 +70,7 @@ public class Match {
      * Simulates a pass or tackle event. This method currently just prints a placeholder message.
      */
     private void simulatePassOrTackle() {
-        System.out.println("Pass or tackle event occurs.");
+        logger.log(currentMinute, "Pass or tackle event occurs.");
     }
 
     /**
@@ -95,7 +99,7 @@ public class Match {
 
         // If no goalkeeper is found, log an error message and return early
         if (goalkeeper == null) {
-            logAction("No goalkeeper found in " + defendingTeam.getName());
+            logger.log(currentMinute, "No goalkeeper found in " + defendingTeam.getName());
             return;
         }
 
@@ -107,11 +111,11 @@ public class Match {
                 scoreGoal(shooter, attackingTeam);
             } else {
                 // If the shot is saved, log the goalkeeper's save
-                logAction(formatPlayer(shooter) + " makes a save for " + defendingTeam.getName());
+                logger.log(currentMinute, formatPlayer(shooter) + " makes a save for " + defendingTeam.getName());
             }
         } else {
             // If the shot misses, log the miss
-            logAction(formatPlayer(shooter) + " misses the shot.");
+            logger.log(currentMinute, formatPlayer(shooter) + " misses the shot.");
         }
     }
 
@@ -129,7 +133,7 @@ public class Match {
             teamBScore++;
         }
         // Log the goal-scoring event
-        System.out.println(formatPlayer(shooter) + " scores for " + team.getName());
+        logger.log(currentMinute, formatPlayer(shooter) + " scores for " + team.getName());
     }
 
     /**
@@ -159,9 +163,9 @@ public class Match {
      * Displays the final score of the match at the end.
      */
     private void displayFinalScore() {
-        logAction("Match Ended!"); // Log that the match has ended
+        logger.log(currentMinute, "Match Ended!"); // Log that the match has ended
         // Log the final score for both teams
-        logAction(teamA.getName() + ": " + teamAScore + " - " + teamBScore + " : " + teamB.getName());
+        logger.log(currentMinute, teamA.getName() + ": " + teamAScore + " - " + teamBScore + " : " + teamB.getName());
     }
 
     /**
@@ -179,7 +183,4 @@ public class Match {
      *
      * @param message The message to log
      */
-    private void logAction(String message) {
-        System.out.println(message); // In a real-world application, this might log to a file or monitoring system
-    }
 }
