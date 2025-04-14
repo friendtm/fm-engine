@@ -43,7 +43,9 @@ public class PlayerGenerator {
                 lastNames.get(random.nextInt(lastNames.size()));
 
         int age = 18 + random.nextInt(18); // 18–35
-        int skill = generateWeightedSkill(); // custom skill generator
+        int skill = (position == Position.GOALKEEPER)
+                ? generateGoalkeeperSkill()
+                : generateWeightedSkill();
         int stamina = 50 + random.nextInt(61); // 50–100
 
         return new Player(name, age, position, skill, stamina);
@@ -52,17 +54,23 @@ public class PlayerGenerator {
     private static int generateWeightedSkill() {
         int roll = random.nextInt(100); // 0–99
 
-        if (roll < 60) { // 60%
-            return 72 + random.nextInt(15); // 72–86
-        } else if (roll < 80) { // next 20%
-            return 59 + random.nextInt(13); // 59–71
-        } else if (roll < 90) { // next 10%
-            return 87 + random.nextInt(3); // 87–89
-        } else if (roll < 96) { // next 6%
-            return 90 + random.nextInt(7); // 90–96
-        } else { // last 4%
-            return 97 + random.nextInt(3); // 97–99
+        if (roll < 50) {          // 50%
+            return 70 + random.nextInt(11);  // 70–80
+        } else if (roll < 80) {   // 30%
+            return 60 + random.nextInt(10);  // 60–69
+        } else if (roll < 95) {   // 15%
+            return 81 + random.nextInt(6);   // 81–86
+        } else {                  // 5%
+            return 87 + random.nextInt(5);   // 87–91
         }
+    }
+
+    private static int generateGoalkeeperSkill() {
+        int roll = random.nextInt(100);
+
+        if (roll < 40) return 68 + random.nextInt(7);  // 68–74
+        if (roll < 85) return 74 + random.nextInt(6);  // 74–79
+        return 80 + random.nextInt(5);                // 80–84
     }
 
     public static List<Player> generateTeamPlayers() {

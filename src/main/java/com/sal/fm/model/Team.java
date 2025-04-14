@@ -41,6 +41,14 @@ public class Team {
     public Tactic getTactic() { return tactic; }
 
     @JsonIgnore
+    public int getAverageSkill() {
+        return (int) players.stream()
+                .mapToInt(Player::getSkill)
+                .average()
+                .orElse(0);
+    }
+
+    @JsonIgnore
     public int getTeamStrength() { return players.stream().mapToInt(Player::getOverallRating).sum(); }
 
     public void setStartingLineup(List<Player> startingLineup) { this.startingLineup = startingLineup; }

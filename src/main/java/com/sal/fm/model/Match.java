@@ -1,5 +1,6 @@
 package com.sal.fm.model;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.sal.fm.enums.Position;
 import com.sal.fm.enums.MatchEvent;
 import com.sal.fm.util.MatchLogger;
@@ -20,7 +21,9 @@ public class Match {
     private int teamBScore = 0; // Score for team B
 
     private int round;
+    @JsonProperty("played")
     private boolean isPlayed;
+    private boolean silentMode = false;
 
     private int currentMinute = 0;
 
@@ -38,6 +41,12 @@ public class Match {
         this.homeTeam = homeTeam;
         this.awayTeam = awayTeam;
         this.isPlayed = false;
+    }
+
+    public Match() {
+        // required for Jackson
+        this.isPlayed = false;
+        this.round = 0;
     }
 
     /**
@@ -61,7 +70,7 @@ public class Match {
      */
     private void simulateMinute() {
         // Randomly select an event: 50% chance for a pass/tackle, 50% for a shot on goal
-        MatchEvent event = random.nextInt(100) < 50 ? MatchEvent.PASS_OR_TACKLE : MatchEvent.SHOT_ON_GOAL;
+        MatchEvent event = random.nextInt(100) < 85 ? MatchEvent.PASS_OR_TACKLE : MatchEvent.SHOT_ON_GOAL;
 
         // Call appropriate method based on the selected event
         switch (event) {
@@ -74,7 +83,7 @@ public class Match {
      * Simulates a pass or tackle event. This method currently just prints a placeholder message.
      */
     private void simulatePassOrTackle() {
-        logger.log(currentMinute, "Pass or tackle event occurs.");
+        if (!silentMode) logger.log(currentMinute, "Pass or tackle event occurs.");
     }
 
     /**
@@ -103,7 +112,7 @@ public class Match {
 
         // If no goalkeeper is found, log an error message and return early
         if (goalkeeper == null) {
-            logger.log(currentMinute, "No goalkeeper found in " + defendingTeam.getName());
+            if (!silentMode) logger.log(currentMinute, "No goalkeeper found in " + defendingTeam.getName());
             return;
         }
 
@@ -115,11 +124,11 @@ public class Match {
                 scoreGoal(shooter, attackingTeam);
             } else {
                 // If the shot is saved, log the goalkeeper's save
-                logger.log(currentMinute, formatPlayer(shooter) + " makes a save for " + defendingTeam.getName());
+                if (!silentMode) logger.log(currentMinute, formatPlayer(shooter) + " makes a save for " + defendingTeam.getName());
             }
         } else {
             // If the shot misses, log the miss
-            logger.log(currentMinute, formatPlayer(shooter) + " misses the shot.");
+            if (!silentMode) logger.log(currentMinute, formatPlayer(shooter) + " misses the shot.");
         }
     }
 
@@ -137,7 +146,7 @@ public class Match {
             teamBScore++;
         }
         // Log the goal-scoring event
-        logger.log(currentMinute, formatPlayer(shooter) + " scores for " + team.getName());
+        if (!silentMode) logger.log(currentMinute, formatPlayer(shooter) + " scores for " + team.getName());
     }
 
     /**
@@ -148,7 +157,7 @@ public class Match {
      */
     private boolean isShotOnTarget(Player shooter) {
         // The shot is on target if the player's skill is greater than a random value
-        return random.nextDouble() < (shooter.getSkill() / 100.0);
+        return random.nextDouble() < (shooter.getSkill() * 0.6 / 100.0);
     }
 
     /**
@@ -159,17 +168,19 @@ public class Match {
      * @return true if the shot results in a goal, false otherwise
      */
     private boolean isGoal(Player shooter, Player goalkeeper) {
-        // A goal is scored if the shooter's skill is higher than the goalkeeper's, or if a random chance succeeds
-        return shooter.getSkill() > goalkeeper.getSkill() || random.nextDouble() < 0.3;
+        double baseChance = 0.06; // 6% base
+        double skillDiff = (shooter.getSkill() - goalkeeper.getSkill()) / 100.0;
+
+        return random.nextDouble() < (baseChance + skillDiff * 0.8);
     }
 
     /**
      * Displays the final score of the match at the end.
      */
     private void displayFinalScore() {
-        logger.log(currentMinute, "Match Ended!"); // Log that the match has ended
+        if (!silentMode) logger.log(currentMinute, "Match Ended!"); // Log that the match has ended
         // Log the final score for both teams
-        logger.log(currentMinute, homeTeam.getName() + ": " + teamAScore + " - " + teamBScore + " : " + awayTeam.getName());
+        if (!silentMode) logger.log(currentMinute, homeTeam.getName() + ": " + teamAScore + " - " + teamBScore + " : " + awayTeam.getName());
     }
 
     /**
@@ -182,6 +193,10 @@ public class Match {
         return p.getSkill() + "|" + p.getPosition() + "|" + p.getName();
     }
 
+    public void enableSilentMode() {
+        this.silentMode = true;
+    }
+
     public Team getHomeTeam() {
         return homeTeam;
     }
@@ -192,6 +207,14 @@ public class Match {
 
     public int getRound() {
         return round;
+    }
+
+    public int getTeamAScore() {
+        return teamAScore;
+    }
+
+    public int getTeamBScore() {
+        return teamBScore;
     }
 
     public void setRound(int round) {
