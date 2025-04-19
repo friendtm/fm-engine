@@ -37,4 +37,44 @@ public class GoalkeepingAttributes {
 
         return sum / 5;
     }
+
+    public int getAerialReach() {
+        return aerialReach;
+    }
+
+    public int getCommandOfArea() {
+        return commandOfArea;
+    }
+
+    public int getCommunication() {
+        return communication;
+    }
+
+    public int getHandling() {
+        return handling;
+    }
+
+    public int getKicking() {
+        return kicking;
+    }
+
+    public int getOneOnOnes() {
+        return oneOnOnes;
+    }
+
+    public int getPassing() {
+        return passing;
+    }
+
+    public int getReflexes() {
+        return reflexes;
+    }
+
+    public int getRushingOut() {
+        return rushingOut;
+    }
+
+    public int getThrowing() {
+        return throwing;
+    }
 }

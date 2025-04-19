@@ -17,4 +17,28 @@ public class HiddenAttributes {
         this.pressureHandling = pressureHandling;
         this.professionalism = professionalism;
     }
+
+    public int getDetermination() {
+        return determination;
+    }
+
+    public int getLeadership() {
+        return leadership;
+    }
+
+    public int getAmbition() {
+        return ambition;
+    }
+
+    public int getTeamwork() {
+        return teamwork;
+    }
+
+    public int getPressureHandling() {
+        return pressureHandling;
+    }
+
+    public int getProfessionalism() {
+        return professionalism;
+    }
 }
