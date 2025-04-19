@@ -1,5 +1,7 @@
 package com.sal.fm.model;
 
+import com.sal.fm.model.league.League;
+
 public class GameState {
     private League league;
     private int currentDay;

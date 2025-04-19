@@ -1,6 +1,6 @@
-package com.sal.fm.model.table;
+package com.sal.fm.model.league;
 
-import com.sal.fm.model.Team;
+import com.sal.fm.model.team.Team;
 
 public class LeagueTableEntry {
     private Team team;

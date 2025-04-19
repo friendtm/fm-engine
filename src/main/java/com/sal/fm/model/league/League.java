@@ -1,4 +1,7 @@
-package com.sal.fm.model;
+package com.sal.fm.model.league;
+
+import com.sal.fm.model.Match;
+import com.sal.fm.model.team.Team;
 
 import java.util.*;
 

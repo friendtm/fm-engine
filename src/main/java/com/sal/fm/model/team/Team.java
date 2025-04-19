@@ -1,10 +1,11 @@
-package com.sal.fm.model;
+package com.sal.fm.model.team;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.sal.fm.enums.Tactic;
+import com.sal.fm.model.player.Player;
 
 public class Team {
     private String name;
@@ -43,13 +44,13 @@ public class Team {
     @JsonIgnore
     public int getAverageSkill() {
         return (int) players.stream()
-                .mapToInt(Player::getSkill)
+                .mapToInt(p -> p.getOverallRating(p.getPosition()))
                 .average()
                 .orElse(0);
     }
 
     @JsonIgnore
-    public int getTeamStrength() { return players.stream().mapToInt(Player::getOverallRating).sum(); }
+    public int getTeamStrength() { return players.stream().mapToInt(p -> p.getOverallRating(p.getPosition())).sum(); }
 
     public void setStartingLineup(List<Player> startingLineup) { this.startingLineup = startingLineup; }
 

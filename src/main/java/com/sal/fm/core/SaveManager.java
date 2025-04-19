@@ -1,7 +1,7 @@
-package com.sal.fm.manager;
+package com.sal.fm.core;
 
-import com.sal.fm.util.JsonUtil;
 import com.sal.fm.model.GameState;
+import com.sal.fm.util.JsonUtil;
 
 import java.io.File;
 
