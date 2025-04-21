@@ -1,66 +1,129 @@
 package com.sal.fm.engine;
 
-import com.sal.fm.model.player.*;
+import com.sal.fm.config.MatchConfig;
+import com.sal.fm.model.player.Player;
+import com.sal.fm.enums.Position;
 
-/**
- * Calculates contextual attribute scores for players in various match situations
- */
 public class AttributeCalculator {
 
-    // === SHOT QUALITY ===
-    public static int calculateShotScore(Player p) {
-        TechnicalAttributes tech = p.getStats().getTechnical();
-        PhysicalAttributes phys = p.getStats().getPhysical();
-        MentalAttributes mental = p.getStats().getMental();
+    public static double calculateShootingAccuracy(Player shooter) {
+        int shooting = shooter.getStats().getTechnical().getShooting();
+        int skill = shooter.getStats().getTechnical().getTechnique();
 
-        int shooting = tech.getShooting();
-        int technique = tech.getTechnique();
-        int composure = mental.getComposure();
-        int balance = phys.getBalance();
-        int strength = phys.getStrength();
+        double base = MatchConfig.BASE_SHOT_ACCURACY;
+        double weightedSkill = (shooting * MatchConfig.SHOOTING_WEIGHT) +
+                (skill * MatchConfig.SKILL_WEIGHT);
 
-        // Basic shot score
-        return (int) ((shooting * 0.4 + technique * 0.25 + composure * 0.2 + balance * 0.1 + strength * 0.05));
+        return (base + weightedSkill) / 100.0;
     }
 
-    public static int calculateLongShotScore(Player p) {
-        TechnicalAttributes tech = p.getStats().getTechnical();
-        return (int) ((calculateShotScore(p) + tech.getLongShots() * 0.4) / 1.4);
+    public static double calculateShotSuccessChance(Player shooter, Player goalkeeper) {
+        int shooting = shooter.getStats().getTechnical().getShooting();
+        int technique = shooter.getStats().getTechnical().getTechnique();
+        int composure = shooter.getStats().getMental().getComposure();
+
+        int longShots = shooter.getStats().getTechnical().getLongShots();
+        int balance = shooter.getStats().getPhysical().getBalance();
+        int strength = shooter.getStats().getPhysical().getStrength();
+
+        int reflexes = goalkeeper.getStats().getGoalkeeping().getReflexes();
+        int positioning = goalkeeper.getStats().getMental().getPositioning();
+        int oneOnOnes = goalkeeper.getStats().getGoalkeeping().getOneOnOnes();
+
+        // Offensive contribution
+        double attackerScore =
+                shooting * MatchConfig.SHOOTING_WEIGHT +
+                        technique * MatchConfig.TECHNIQUE_WEIGHT +
+                        composure * MatchConfig.COMPOSURE_WEIGHT +
+                        longShots * MatchConfig.LONG_SHOTS_WEIGHT +
+                        balance * MatchConfig.BALANCE_WEIGHT +
+                        strength * MatchConfig.STRENGTH_WEIGHT;
+
+        // Defensive contribution
+        double defenderScore =
+                reflexes * MatchConfig.REFLEXES_WEIGHT +
+                        positioning * MatchConfig.POSITIONING_WEIGHT +
+                        oneOnOnes * MatchConfig.ONE_ON_ONE_WEIGHT;
+
+        // Position-based modifier
+        double positionModifier = switch (shooter.getPosition()) {
+            case WINGER -> MatchConfig.MODIFIER_WINGER;
+            case PIVOT -> MatchConfig.MODIFIER_PIVOT;
+            case FIXO -> MatchConfig.MODIFIER_FIXO;
+            case GOALKEEPER -> MatchConfig.MODIFIER_GOALKEEPER;
+            default -> 1.0;
+        };
+
+        if (shooter.getStats().getMental().getWorkRate() >= MatchConfig.HIGH_WORKRATE_THRESHOLD) {
+            attackerScore += MatchConfig.HIGH_WORKRATE_BONUS * 100; // converted to same scale
+        }
+
+        double rawChance = MatchConfig.BASE_GOAL_CHANCE + (attackerScore - defenderScore) / 100.0;
+        double finalChance = clampChance(rawChance * positionModifier);
+
+        return finalChance;
     }
 
-    // === PASS QUALITY ===
-    public static int calculatePassScore(Player p) {
-        TechnicalAttributes tech = p.getStats().getTechnical();
-        MentalAttributes mental = p.getStats().getMental();
+    public static double calculateGoalChance(Player shooter, Player goalkeeper, boolean underPressure) {
+        int shotPower = shooter.getStats().getTechnical().getShooting();
+        int pace = shooter.getStats().getPhysical().getPace();
+        int gkSkill = goalkeeper.getStats().getGoalkeeping().getReflexes();
 
-        int passing = tech.getPassing();
-        int technique = tech.getTechnique();
-        int vision = mental.getVision();
+        double base = MatchConfig.BASE_GOAL_CHANCE;
 
-        return (int) ((passing * 0.5 + technique * 0.3 + vision * 0.2));
+        double attackerFactor = (shotPower * MatchConfig.SHOT_POWER_WEIGHT +
+                pace * MatchConfig.PACE_WEIGHT) / 100.0;
+
+        double keeperFactor = gkSkill * MatchConfig.GK_DEFENSE_WEIGHT / 100.0;
+
+        double rawChance = base + attackerFactor - keeperFactor;
+
+        // Apply position modifier
+        double modifier = switch (shooter.getPosition()) {
+            case PIVOT -> MatchConfig.MODIFIER_PIVOT;
+            case WINGER -> MatchConfig.MODIFIER_WINGER;
+            case FIXO -> MatchConfig.MODIFIER_FIXO;
+            case GOALKEEPER -> MatchConfig.MODIFIER_GOALKEEPER;
+            default -> 1.0;
+        };
+
+        // High work rate bonus
+        if (shooter.getStats().getMental().getWorkRate() >= MatchConfig.HIGH_WORKRATE_THRESHOLD) {
+            rawChance += MatchConfig.HIGH_WORKRATE_BONUS;
+        }
+
+        // Pressure handling adjustment
+        if (underPressure) {
+            int pressure = shooter.getStats().getHidden().getPressureHandling();
+            rawChance -= pressure * MatchConfig.PRESSURE_BALANCE_PENALTY;
+        }
+
+        return Math.max(0, rawChance * modifier); // Ensure chance is never negative
     }
 
-    // === TACKLE QUALITY ===
-    public static int calculateDefensiveScore(Player p) {
-        TechnicalAttributes tech = p.getStats().getTechnical();
-        MentalAttributes mental = p.getStats().getMental();
+    public static double calculatePassSuccessChance(Player passer, Player defender) {
+        int passing = passer.getStats().getTechnical().getPassing();
+        int technique = passer.getStats().getTechnical().getTechnique();
+        int vision = passer.getStats().getMental().getVision();
 
-        int tackling = tech.getTackling();
-        int aggression = mental.getAggression();
-        int positioning = mental.getPositioning();
+        int tackling = defender.getStats().getTechnical().getTackling();
+        int anticipation = defender.getStats().getMental().getAnticipation();
 
-        return (int) ((tackling * 0.5 + aggression * 0.2 + positioning * 0.3));
+        double attackerScore =
+                passing * MatchConfig.PASSING_WEIGHT +
+                        technique * MatchConfig.TECHNIQUE_WEIGHT +
+                        vision * MatchConfig.VISION_WEIGHT;
+
+        double defenderScore =
+                tackling * MatchConfig.DEFENDING_WEIGHT +
+                        anticipation * MatchConfig.ANTICIPATION_WEIGHT;
+
+        double chance = (attackerScore - defenderScore + MatchConfig.BASE_PASS_CHANCE) / 100.0;
+
+        return clampChance(chance);
     }
 
-    // === GOALKEEPING QUALITY ===
-    public static int calculateGoalkeeperSaveScore(Player p) {
-        GoalkeepingAttributes gk = p.getStats().getGoalkeeping();
-        MentalAttributes mental = p.getStats().getMental();
-
-        int reflexes = gk.getReflexes();
-        int handling = gk.getHandling();
-        int positioning = mental.getPositioning();
-
-        return (int) ((reflexes * 0.4 + handling * 0.3 + positioning * 0.3));
+    public static double clampChance(double chance) {
+        return Math.max(0.01, Math.min(0.99, chance));
     }
 }

@@ -8,6 +8,10 @@ public class HiddenAttributes {
     public int pressureHandling;
     public int professionalism;
 
+    public HiddenAttributes() {
+        // required for Jackson
+    }
+
     public HiddenAttributes(int determination, int leadership, int ambition, int teamwork,
                             int pressureHandling, int professionalism) {
         this.determination = determination;

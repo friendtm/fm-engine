@@ -1,5 +1,7 @@
 package com.sal.fm.model.player;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 public class MentalAttributes {
     public int vision;
     public int composure;
@@ -11,6 +13,10 @@ public class MentalAttributes {
     public int anticipation;
     public int flair;
     public int workRate;
+
+    public MentalAttributes() {
+        // required for Jackson
+    }
 
     public MentalAttributes(int vision, int composure, int concentration, int positioning, int decisions,
                             int offTheBall, int aggression, int anticipation, int flair, int workRate) {
@@ -38,10 +44,6 @@ public class MentalAttributes {
         return concentration;
     }
 
-    public int getPositioning() {
-        return positioning;
-    }
-
     public int getDecisions() {
         return decisions;
     }
@@ -66,6 +68,11 @@ public class MentalAttributes {
         return workRate;
     }
 
+    public int getPositioning() {
+        return positioning;
+    }
+
+    @JsonIgnore
     public int getAverage() {
         int sum =
                 vision +

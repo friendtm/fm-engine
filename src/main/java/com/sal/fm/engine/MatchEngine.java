@@ -1,5 +1,6 @@
 package com.sal.fm.engine;
 
+import com.sal.fm.config.MatchConfig;
 import com.sal.fm.enums.MatchEvent;
 import com.sal.fm.enums.Position;
 import com.sal.fm.model.Match;
@@ -7,7 +8,6 @@ import com.sal.fm.model.player.Player;
 import com.sal.fm.model.team.Team;
 import com.sal.fm.util.DiceUtil;
 import com.sal.fm.util.MatchLogger;
-import com.sal.fm.config.MatchConfig;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -57,21 +57,17 @@ public class MatchEngine {
         Player defender = DiceUtil.pickRandom(defenders);
 
         int passing = attacker.getStats().getTechnical().getPassing();
-        int skill = attacker.getStats().getTechnical().getDribbling();
-        int creativity = (int) ((passing * 0.6 + skill * 0.4));
+        int technique = attacker.getStats().getTechnical().getTechnique();
+        int vision = attacker.getStats().getMental().getVision();
+        double attackerScore = passing * 0.5 + technique * 0.3 + vision * 0.2;
 
-        int defendingScore = defender.getStats().getTechnical().getTackling();
-        if ((attacker.getPosition() == Position.WINGER || attacker.getPosition() == Position.PIVOT)
-                && attacker.getStats().getMental().getWorkRate() >= MatchConfig.HIGH_WORKRATE_THRESHOLD) {
-            defendingScore += 5;
-        }
+        int tackling = defender.getStats().getTechnical().getTackling();
+        double defenderScore = tackling * 1.0;
 
-        boolean success = DiceUtil.successCheck(creativity, defendingScore);
+        boolean success = attackerScore > defenderScore || DiceUtil.successCheck((int) attackerScore, (int) defenderScore);
 
         if (debugMode) {
-            String result = success ? "✅ Success" : "❌ Intercepted";
-            logger.logDebug(minute, "🛡️ PASS DUEL: " + attacker.getName() + " (PASS: " + passing + ", SKILL: " + skill + ") vs " +
-                    defender.getName() + " (DEF: " + defender.getStats().getTechnical().getTackling() + ") → " + result);
+            logger.logDebug(minute, DuelResolver.buildPassingDebugLog(attacker, defender, success, attackerScore, defenderScore));
         }
 
         if (success) {
@@ -99,27 +95,31 @@ public class MatchEngine {
         Player shooter = DiceUtil.pickRandom(shooters);
         Player goalkeeper = goalkeepers.get(0);
 
+        boolean underPressure = DiceUtil.rollPercent(35);
         boolean onTarget = DuelResolver.isShotOnTarget(shooter);
         boolean goal = false;
 
         if (onTarget) {
-            goal = DuelResolver.isGoal(shooter, goalkeeper);
+            double chance = AttributeCalculator.calculateShotSuccessChance(shooter, goalkeeper);
+            if (underPressure) chance -= MatchConfig.PRESSURE_BALANCE_PENALTY;
+            goal = DiceUtil.chance(chance);
+
             if (goal) {
                 match.scoreGoal(shooter, attacking);
                 logger.log(minute, shooter.getName() + " scores for " + attacking.getName() + "!", silentMode);
             } else {
                 logger.log(minute, goalkeeper.getName() + " makes a big save for " + defending.getName(), silentMode);
             }
+
+            if (debugMode) {
+                String shotLog = DuelResolver.buildShootingDebugLog(shooter, goalkeeper, chance, goal, underPressure);
+                logger.logDebug(minute, shotLog);
+            }
         } else {
             logger.log(minute, shooter.getName() + " fires wide!", silentMode);
-        }
-
-        if (debugMode) {
-            String result = !onTarget ? "❌ Missed" : (goal ? "✅ Goal" : "🧤 Saved");
-            logger.logDebug(minute,
-                    "🎯 SHOT DUEL: " + shooter.getName() + " (SHOOT: " + shooter.getStats().getTechnical().getShooting() +
-                            ", SKILL: " + shooter.getStats().getTechnical().getDribbling() + ", PACE: " + shooter.getStats().getPhysical().getPace() + ") vs " +
-                            goalkeeper.getName() + " (GK: " + goalkeeper.getStats().getGoalkeeping().getAverage() + ") → " + result);
+            if (debugMode) {
+                logger.logDebug(minute, "❌ Shot missed by " + shooter.getName());
+            }
         }
     }
 

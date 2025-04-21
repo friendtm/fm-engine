@@ -1,5 +1,7 @@
 package com.sal.fm.model.player;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 public class GoalkeepingAttributes {
     public int aerialReach;
     public int commandOfArea;
@@ -11,6 +13,10 @@ public class GoalkeepingAttributes {
     public int reflexes;
     public int rushingOut;
     public int throwing;
+
+    public GoalkeepingAttributes() {
+        // required for Jackson
+    }
 
     public GoalkeepingAttributes(int aerialReach, int commandOfArea, int communication, int handling,
                                  int kicking, int oneOnOnes, int passing, int reflexes,
@@ -27,6 +33,7 @@ public class GoalkeepingAttributes {
         this.throwing = throwing;
     }
 
+    @JsonIgnore
     public int getAverage() {
         int sum =
                 aerialReach +

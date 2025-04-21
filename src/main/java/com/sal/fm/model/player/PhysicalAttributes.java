@@ -1,5 +1,7 @@
 package com.sal.fm.model.player;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 public class PhysicalAttributes {
     public int pace;
     public int acceleration;
@@ -9,6 +11,10 @@ public class PhysicalAttributes {
     public int jumpingReach;
     public int agility;
     public int naturalFitness;
+
+    public PhysicalAttributes() {
+        // required for Jackson
+    }
 
     public PhysicalAttributes(int pace, int acceleration, int balance, int strength, int stamina,
                               int jumpingReach, int agility, int naturalFitness) {
@@ -54,6 +60,7 @@ public class PhysicalAttributes {
         return naturalFitness;
     }
 
+    @JsonIgnore
     public int getAverage() {
         int sum =
                 pace +

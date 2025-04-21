@@ -9,6 +9,7 @@ import com.sal.fm.model.league.LeagueTableEntry;
 import com.sal.fm.model.Match;
 import com.sal.fm.model.team.Team;
 
+import com.sal.fm.util.DebugTools;
 import com.sal.fm.util.JsonUtil;
 
 import java.util.*;
@@ -41,6 +42,7 @@ public class GameLoop {
             System.out.println("5. Save League");
             System.out.println("6. Show League Table");
             System.out.println("7. Exit Game");
+            System.out.println("99. Simulate Debug Match");
             System.out.print("Choose an option: ");
 
             int choice = scanner.nextInt();
@@ -57,6 +59,7 @@ public class GameLoop {
                     System.out.println("✔ Progress saved. Goodbye!");
                     running = false;
                 }
+                case 99 -> DebugTools.simulateDebugMatch(gameState.getLeague());
                 default -> System.out.println("Invalid option. Try again.");
             }
         }

@@ -1,5 +1,7 @@
 package com.sal.fm.model.player;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 public class PlayerStats {
 
     private TechnicalAttributes technical;
@@ -64,10 +66,12 @@ public class PlayerStats {
         this.goalkeeping = goalkeeping;
     }
 
+    @JsonIgnore
     public int getAverageOutfieldSkill() {
         return (technical.getPassing() + technical.getDribbling() + technical.getShooting() + technical.getTechnique()) / 4;
     }
 
+    @JsonIgnore
     public int getAverageGoalkeepingSkill() {
         return goalkeeping.getAverage();
     }

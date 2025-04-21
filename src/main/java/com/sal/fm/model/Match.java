@@ -76,6 +76,11 @@ public class Match {
                 " - " + teamBScore + " " + awayTeam.getName(), silentMode);
     }
 
+    public void enableDebugMode() {
+        this.silentMode = false;
+        this.debugMode = true;
+    }
+
     public void enableSilentMode() {
         this.silentMode = true;
     }

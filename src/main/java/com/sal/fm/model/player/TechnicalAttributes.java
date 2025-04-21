@@ -1,5 +1,7 @@
 package com.sal.fm.model.player;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 public class TechnicalAttributes {
     public int corners;
     public int penaltyTaking;
@@ -11,6 +13,10 @@ public class TechnicalAttributes {
     public int dribbling;
     public int tackling;
     public int technique;
+
+    public TechnicalAttributes() {
+        // required for Jackson
+    }
 
     public TechnicalAttributes(int corners, int penaltyTaking, int freeKicks, int shooting, int longShots,
                                int heading, int passing, int dribbling, int tackling, int technique) {
@@ -66,6 +72,7 @@ public class TechnicalAttributes {
         return technique;
     }
 
+    @JsonIgnore
     public int getAverage() {
         int sum =
                 corners +
