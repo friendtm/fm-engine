@@ -10,16 +10,24 @@ import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Responsible for generating random players with realistic attributes based on their position.
+ * Utilizes external name files and random dice rolls to simulate real player diversity.
+ */
 public class PlayerGenerator {
 
     private static final List<String> firstNames = new ArrayList<>();
     private static final List<String> lastNames = new ArrayList<>();
 
+    // Load name files once on class load
     static {
         loadNames("data/firstNames.txt", firstNames);
         loadNames("data/lastNames.txt", lastNames);
     }
 
+    /**
+     * Loads names from a resource file into a list.
+     */
     private static void loadNames(String filePath, List<String> targetList) {
         try (InputStream inputStream = PlayerGenerator.class.getClassLoader().getResourceAsStream(filePath)) {
             if (inputStream == null) {
@@ -38,6 +46,9 @@ public class PlayerGenerator {
         }
     }
 
+    /**
+     * Generates a single player for a given position with randomized stats and name.
+     */
     public static Player generatePlayer(Position position) {
         String name = DiceUtil.pickRandom(firstNames) + " " + DiceUtil.pickRandom(lastNames);
         int age = DiceUtil.roll(18, 35);
@@ -46,6 +57,9 @@ public class PlayerGenerator {
         return new Player(name, age, position, stats);
     }
 
+    /**
+     * Generates a full squad of 12 players with a reasonable positional distribution.
+     */
     public static List<Player> generateTeamPlayers() {
         List<Player> players = new ArrayList<>();
 
@@ -65,7 +79,7 @@ public class PlayerGenerator {
         players.add(generatePlayer(Position.WINGER));
         players.add(generatePlayer(Position.WINGER));
 
-        // 4 random field players (excluding GOALKEEPER)
+        // 4 more random field players
         Position[] fieldPositions = {Position.FIXO, Position.PIVOT, Position.WINGER};
         for (int i = 0; i < 4; i++) {
             Position randomPos = DiceUtil.pickRandom(List.of(fieldPositions));
@@ -75,6 +89,9 @@ public class PlayerGenerator {
         return players;
     }
 
+    /**
+     * Generates appropriate stats for a given position using dedicated stat profiles.
+     */
     public static PlayerStats generateStats(Position position) {
         return switch (position) {
             case GOALKEEPER -> generateGoalkeeperStats();
@@ -84,24 +101,15 @@ public class PlayerGenerator {
         };
     }
 
+    // === POSITIONAL PROFILES ===
+
     private static PlayerStats generateFixoStats() {
         return new PlayerStats(
                 generateDefensiveTechnicals(),
                 generateStrongPhysicals(),
                 generateBalancedMentals(),
                 generateHiddenAttributes(),
-                new GoalkeepingAttributes(
-                        DiceUtil.roll(20, 60), // aerialReach
-                        DiceUtil.roll(1, 20), // commandOfArea
-                        DiceUtil.roll(10, 40), // communication
-                        DiceUtil.roll(1, 30), // handling
-                        DiceUtil.roll(20, 50), // kicking
-                        DiceUtil.roll(1, 10), // oneOnOnes
-                        DiceUtil.roll(20, 50), // passing
-                        DiceUtil.roll(1, 30), // reflexes
-                        DiceUtil.roll(1, 30), // rushingOut
-                        DiceUtil.roll(1, 20)  // throwing
-                )
+                generateBasicGKAttributes()
         );
     }
 
@@ -111,18 +119,7 @@ public class PlayerGenerator {
                 generateFastPhysicals(),
                 generateCreativeMentals(),
                 generateHiddenAttributes(),
-                new GoalkeepingAttributes(
-                        DiceUtil.roll(20, 60), // aerialReach
-                        DiceUtil.roll(1, 20), // commandOfArea
-                        DiceUtil.roll(10, 40), // communication
-                        DiceUtil.roll(1, 30), // handling
-                        DiceUtil.roll(20, 50), // kicking
-                        DiceUtil.roll(1, 10), // oneOnOnes
-                        DiceUtil.roll(20, 50), // passing
-                        DiceUtil.roll(1, 30), // reflexes
-                        DiceUtil.roll(1, 30), // rushingOut
-                        DiceUtil.roll(1, 20)  // throwing
-                )
+                generateBasicGKAttributes()
         );
     }
 
@@ -132,18 +129,7 @@ public class PlayerGenerator {
                 generatePowerfulPhysicals(),
                 generateAggressiveMentals(),
                 generateHiddenAttributes(),
-                new GoalkeepingAttributes(
-                        DiceUtil.roll(20, 60), // aerialReach
-                        DiceUtil.roll(1, 20), // commandOfArea
-                        DiceUtil.roll(10, 40), // communication
-                        DiceUtil.roll(1, 30), // handling
-                        DiceUtil.roll(20, 50), // kicking
-                        DiceUtil.roll(1, 10), // oneOnOnes
-                        DiceUtil.roll(20, 50), // passing
-                        DiceUtil.roll(1, 30), // reflexes
-                        DiceUtil.roll(1, 30), // rushingOut
-                        DiceUtil.roll(1, 20)  // throwing
-                )
+                generateBasicGKAttributes()
         );
     }
 
@@ -157,7 +143,8 @@ public class PlayerGenerator {
         );
     }
 
-    // TECHNICALS
+    // === TECHNICAL ATTRIBUTES ===
+
     private static TechnicalAttributes generateDefensiveTechnicals() {
         return new TechnicalAttributes(
                 DiceUtil.roll(1, 10),  // corners
@@ -175,96 +162,63 @@ public class PlayerGenerator {
 
     private static TechnicalAttributes generateWingerTechnicals() {
         return new TechnicalAttributes(
-                DiceUtil.roll(30, 70),
-                DiceUtil.roll(50, 80),
-                DiceUtil.roll(40, 80),
-                DiceUtil.roll(60, 85),
-                DiceUtil.roll(65, 90),
-                DiceUtil.roll(40, 65),
-                DiceUtil.roll(60, 85),
-                DiceUtil.roll(75, 95),
-                DiceUtil.roll(30, 50),
-                DiceUtil.roll(70, 95)
+                DiceUtil.roll(30, 70), DiceUtil.roll(50, 80), DiceUtil.roll(40, 80),
+                DiceUtil.roll(60, 85), DiceUtil.roll(65, 90), DiceUtil.roll(40, 65),
+                DiceUtil.roll(60, 85), DiceUtil.roll(75, 95), DiceUtil.roll(30, 50), DiceUtil.roll(70, 95)
         );
     }
 
     private static TechnicalAttributes generateAttackerTechnicals() {
         return new TechnicalAttributes(
-                DiceUtil.roll(20, 40),
-                DiceUtil.roll(60, 85),
-                DiceUtil.roll(40, 70),
-                DiceUtil.roll(70, 90),
-                DiceUtil.roll(55, 80),
-                DiceUtil.roll(65, 85),
-                DiceUtil.roll(60, 80),
-                DiceUtil.roll(60, 75),
-                DiceUtil.roll(40, 60),
-                DiceUtil.roll(60, 85)
+                DiceUtil.roll(20, 40), DiceUtil.roll(60, 85), DiceUtil.roll(40, 70),
+                DiceUtil.roll(70, 90), DiceUtil.roll(55, 80), DiceUtil.roll(65, 85),
+                DiceUtil.roll(60, 80), DiceUtil.roll(60, 75), DiceUtil.roll(40, 60), DiceUtil.roll(60, 85)
         );
     }
 
     private static TechnicalAttributes generateMinimalTechnicals() {
         return new TechnicalAttributes(
-                1, 1, DiceUtil.roll(10, 30),
-                DiceUtil.roll(10, 30), DiceUtil.roll(10, 30), DiceUtil.roll(10, 30),
-                DiceUtil.roll(30, 50), DiceUtil.roll(20, 40), DiceUtil.roll(20, 40), DiceUtil.roll(20, 40)
+                1, 1, DiceUtil.roll(10, 30), DiceUtil.roll(10, 30), DiceUtil.roll(10, 30),
+                DiceUtil.roll(10, 30), DiceUtil.roll(30, 50), DiceUtil.roll(20, 40), DiceUtil.roll(20, 40), DiceUtil.roll(20, 40)
         );
     }
 
-    // PHYSICAL
+    // === PHYSICAL ATTRIBUTES ===
+
     private static PhysicalAttributes generateStrongPhysicals() {
         return new PhysicalAttributes(
-                DiceUtil.roll(30, 60), // pace
-                DiceUtil.roll(30, 60),
-                DiceUtil.roll(60, 90),
-                DiceUtil.roll(70, 95),
-                DiceUtil.roll(50, 80),
-                DiceUtil.roll(60, 85),
-                DiceUtil.roll(40, 60),
-                DiceUtil.roll(60, 90)
+                DiceUtil.roll(30, 60), DiceUtil.roll(30, 60), DiceUtil.roll(60, 90),
+                DiceUtil.roll(70, 95), DiceUtil.roll(50, 80), DiceUtil.roll(60, 85),
+                DiceUtil.roll(40, 60), DiceUtil.roll(60, 90)
         );
     }
 
     private static PhysicalAttributes generateFastPhysicals() {
         return new PhysicalAttributes(
-                DiceUtil.roll(80, 100),
-                DiceUtil.roll(80, 100),
-                DiceUtil.roll(60, 80),
-                DiceUtil.roll(40, 60),
-                DiceUtil.roll(60, 80),
-                DiceUtil.roll(60, 85),
-                DiceUtil.roll(75, 100),
-                DiceUtil.roll(60, 85)
+                DiceUtil.roll(80, 100), DiceUtil.roll(80, 100), DiceUtil.roll(60, 80),
+                DiceUtil.roll(40, 60), DiceUtil.roll(60, 80), DiceUtil.roll(60, 85),
+                DiceUtil.roll(75, 100), DiceUtil.roll(60, 85)
         );
     }
 
     private static PhysicalAttributes generatePowerfulPhysicals() {
         return new PhysicalAttributes(
-                DiceUtil.roll(50, 75),
-                DiceUtil.roll(50, 70),
-                DiceUtil.roll(70, 95),
-                DiceUtil.roll(80, 100),
-                DiceUtil.roll(50, 80),
-                DiceUtil.roll(60, 85),
-                DiceUtil.roll(40, 70),
-                DiceUtil.roll(70, 90)
+                DiceUtil.roll(50, 75), DiceUtil.roll(50, 70), DiceUtil.roll(70, 95),
+                DiceUtil.roll(80, 100), DiceUtil.roll(50, 80), DiceUtil.roll(60, 85),
+                DiceUtil.roll(40, 70), DiceUtil.roll(70, 90)
         );
     }
 
     private static PhysicalAttributes generateGKPhysicals() {
         return new PhysicalAttributes(
-                DiceUtil.roll(50, 70),
-                DiceUtil.roll(50, 70),
-                DiceUtil.roll(60, 80),
-                DiceUtil.roll(50, 75),
-                DiceUtil.roll(50, 70),
-                DiceUtil.roll(65, 85),
-                DiceUtil.roll(50, 75),
-                DiceUtil.roll(65, 85)
+                DiceUtil.roll(50, 70), DiceUtil.roll(50, 70), DiceUtil.roll(60, 80),
+                DiceUtil.roll(50, 75), DiceUtil.roll(50, 70), DiceUtil.roll(65, 85),
+                DiceUtil.roll(50, 75), DiceUtil.roll(65, 85)
         );
     }
 
-    // MENTAL
+    // === MENTAL ATTRIBUTES ===
+
     private static MentalAttributes generateBalancedMentals() {
         return new MentalAttributes(
                 DiceUtil.roll(50, 80), DiceUtil.roll(50, 80), DiceUtil.roll(50, 80),
@@ -289,7 +243,8 @@ public class PlayerGenerator {
         );
     }
 
-    // HIDDEN
+    // === HIDDEN ATTRIBUTES ===
+
     private static HiddenAttributes generateHiddenAttributes() {
         return new HiddenAttributes(
                 DiceUtil.roll(50, 100), DiceUtil.roll(40, 90), DiceUtil.roll(40, 100),
@@ -297,11 +252,21 @@ public class PlayerGenerator {
         );
     }
 
+    // === GOALKEEPING ATTRIBUTES ===
+
     private static GoalkeepingAttributes generateGoalkeepingSkills() {
         return new GoalkeepingAttributes(
                 DiceUtil.roll(60, 90), DiceUtil.roll(60, 90), DiceUtil.roll(60, 90), DiceUtil.roll(60, 90),
                 DiceUtil.roll(60, 90), DiceUtil.roll(60, 90), DiceUtil.roll(60, 90), DiceUtil.roll(60, 90),
                 DiceUtil.roll(60, 90), DiceUtil.roll(60, 90)
+        );
+    }
+
+    private static GoalkeepingAttributes generateBasicGKAttributes() {
+        return new GoalkeepingAttributes(
+                DiceUtil.roll(20, 60), DiceUtil.roll(1, 20), DiceUtil.roll(10, 40), DiceUtil.roll(1, 30),
+                DiceUtil.roll(20, 50), DiceUtil.roll(1, 10), DiceUtil.roll(20, 50), DiceUtil.roll(1, 30),
+                DiceUtil.roll(1, 30), DiceUtil.roll(1, 20)
         );
     }
 }

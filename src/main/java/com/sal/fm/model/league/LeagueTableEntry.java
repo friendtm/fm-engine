@@ -2,52 +2,85 @@ package com.sal.fm.model.league;
 
 import com.sal.fm.model.team.Team;
 
+/**
+ * Represents a row in the league table (standings).
+ * Tracks performance stats like wins, losses, goals, and points.
+ */
 public class LeagueTableEntry {
-    private Team team;
+
+    private final Team team;
     private int played;
     private int wins;
     private int draws;
     private int losses;
     private int goalsScored;
     private int goalsAgainst;
-    private int points;
-    private int averageSkill;
 
+    /**
+     * Creates a new entry for the given team with zeroed stats.
+     *
+     * @param team the team being tracked
+     */
     public LeagueTableEntry(Team team) {
         this.team = team;
-        this.averageSkill = team.getAverageSkill();
     }
 
-    public void recordResult(int homeScore, int awayScore, boolean isHomeTeam) {
+    /**
+     * Updates the table entry based on the outcome of a single match.
+     *
+     * @param scored      number of goals this team scored
+     * @param conceded    number of goals this team conceded
+     * @param isHomeTeam  whether this team was home (true) or away (false)
+     */
+    public void recordResult(int scored, int conceded, boolean isHomeTeam) {
         played++;
+        goalsScored += isHomeTeam ? scored : conceded;
+        goalsAgainst += isHomeTeam ? conceded : scored;
 
-        int scored = isHomeTeam ? homeScore : awayScore;
-        int conceded = isHomeTeam ? awayScore : homeScore;
-
-        goalsScored += scored;
-        goalsAgainst += conceded;
-
-        if (scored == conceded) {
-            draws++;
-            points += 1;
-        } else if (scored > conceded) {
+        if (scored > conceded) {
             wins++;
-            points += 3;
+        } else if (scored == conceded) {
+            draws++;
         } else {
             losses++;
         }
     }
 
-    public Team getTeam() { return team; }
-    public int getPlayed() { return played; }
-    public int getWins() { return wins; }
-    public int getDraws() { return draws; }
-    public int getLosses() { return losses; }
-    public int getGoalsScored() { return goalsScored; }
-    public int getGoalsAgainst() { return goalsAgainst; }
-    public int getPoints() { return points; }
+    public Team getTeam() {
+        return team;
+    }
 
-    public int getGoalDifference() {
-        return goalsScored - goalsAgainst;
+    public int getPlayed() {
+        return played;
+    }
+
+    public int getWins() {
+        return wins;
+    }
+
+    public int getDraws() {
+        return draws;
+    }
+
+    public int getLosses() {
+        return losses;
+    }
+
+    public int getGoalsScored() {
+        return goalsScored;
+    }
+
+    public int getGoalsAgainst() {
+        return goalsAgainst;
+    }
+
+    /**
+     * Computes and returns the points earned by this team.
+     * 3 points per win, 1 per draw.
+     *
+     * @return total points
+     */
+    public int getPoints() {
+        return (wins * 3) + draws;
     }
 }

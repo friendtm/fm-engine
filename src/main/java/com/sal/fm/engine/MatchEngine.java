@@ -12,6 +12,11 @@ import com.sal.fm.util.MatchLogger;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * Core simulation engine that handles minute-by-minute match logic.
+ * Responsible for triggering and resolving passing and shooting events,
+ * applying momentum effects, and logging outcomes.
+ */
 public class MatchEngine {
     private final Match match;
     private final MatchLogger logger;
@@ -26,6 +31,10 @@ public class MatchEngine {
         this.debugMode = debugMode;
     }
 
+    /**
+     * Simulates one minute of gameplay.
+     * Based on momentum, decides whether a PASS or SHOT event happens.
+     */
     public void simulateMinute(int currentMinute, boolean silentMode) {
         MatchEvent event;
 
@@ -44,6 +53,10 @@ public class MatchEngine {
         }
     }
 
+    /**
+     * Handles a passing attempt between an attacker and a defender.
+     * If successful, attacker breaks the press; if not, defender builds momentum.
+     */
     private void handlePassOrTackle(int minute, boolean silentMode) {
         Team attacking = DiceUtil.rollPercent(50) ? match.getHomeTeam() : match.getAwayTeam();
         Team defending = attacking == match.getHomeTeam() ? match.getAwayTeam() : match.getHomeTeam();
@@ -62,10 +75,11 @@ public class MatchEngine {
         double attackerScore = passing * 0.5 + technique * 0.3 + vision * 0.2;
 
         int tackling = defender.getStats().getTechnical().getTackling();
-        double defenderScore = tackling * 1.0;
+        double defenderScore = tackling;
 
         boolean success = attackerScore > defenderScore || DiceUtil.successCheck((int) attackerScore, (int) defenderScore);
 
+        // Debug output
         if (debugMode) {
             logger.logDebug(minute, DuelResolver.buildPassingDebugLog(attacker, defender, success, attackerScore, defenderScore));
         }
@@ -74,6 +88,7 @@ public class MatchEngine {
             logger.log(minute, attacker.getName() + " breaks through the press!", silentMode);
         } else {
             logger.log(minute, defender.getName() + " wins the ball for " + defending.getName(), silentMode);
+
             if (defending == match.getHomeTeam()) homeMomentum = true;
             else awayMomentum = true;
 
@@ -81,6 +96,10 @@ public class MatchEngine {
         }
     }
 
+    /**
+     * Handles a shot on goal.
+     * Determines if the shot is on target, and if it results in a goal or save.
+     */
     private void handleShotOnGoal(int minute, boolean silentMode) {
         Team attacking = DiceUtil.rollPercent(50) ? match.getHomeTeam() : match.getAwayTeam();
         Team defending = attacking == match.getHomeTeam() ? match.getAwayTeam() : match.getHomeTeam();
@@ -118,11 +137,14 @@ public class MatchEngine {
         } else {
             logger.log(minute, shooter.getName() + " fires wide!", silentMode);
             if (debugMode) {
-                logger.logDebug(minute, "❌ Shot missed by " + shooter.getName());
+                logger.logDebug(minute, "\u274C Shot missed by " + shooter.getName());
             }
         }
     }
 
+    /**
+     * Filters out field players (non-goalkeepers) from a team lineup.
+     */
     private List<Player> getFieldPlayers(Team team) {
         return team.getStartingLineup().stream()
                 .filter(p -> p.getPosition() != Position.GOALKEEPER)

@@ -8,8 +8,17 @@ import com.sal.fm.model.team.Team;
 
 import java.util.*;
 
+/**
+ * Handles simulation of an entire matchday, including score generation,
+ * table updates, and result display.
+ */
 public class MatchSimulator {
 
+    /**
+     * Simulates all matches scheduled for the current matchday in the game state.
+     *
+     * @param state the current GameState object
+     */
     public static void simulateMatchday(GameState state) {
         int matchday = state.getCurrentMatchday();
         League league = state.getLeague();
@@ -21,6 +30,7 @@ public class MatchSimulator {
 
         System.out.println("\n=== Simulating Matchday " + matchday + " ===");
 
+        // Find all unplayed matches for this matchday
         List<Match> matches = league.getMatches().stream()
                 .filter(m -> m.getRound() == matchday && !m.isPlayed())
                 .toList();
@@ -31,10 +41,11 @@ public class MatchSimulator {
         }
 
         for (Match match : matches) {
-            match.enableSilentMode();
+            match.enableSilentMode();  // hides logs if not in debug mode
             match.startMatch();
             match.markAsPlayed();
 
+            // Display result
             System.out.printf("%s %d - %d %s%n",
                     match.getHomeTeam().getName(),
                     match.getTeamAScore(),
@@ -42,17 +53,25 @@ public class MatchSimulator {
                     match.getAwayTeam().getName());
         }
 
+        // Show updated standings
         displayLeagueTable(league);
 
+        // Advance to next matchday
         state.setCurrentMatchday(matchday + 1);
         state.setLastMatchdayDay(state.getCurrentDay());
     }
 
+    /**
+     * Prints the schedule and results (if available) for the current matchday.
+     *
+     * @param state the current GameState
+     */
     public static void showMatchdaySchedule(GameState state) {
         int matchday = state.getCurrentMatchday();
         League league = state.getLeague();
 
         System.out.println("\n=== Matchday " + matchday + " Schedule ===");
+
         league.getMatches().stream()
                 .filter(m -> m.getRound() == matchday)
                 .forEach(m -> {
@@ -67,18 +86,31 @@ public class MatchSimulator {
                 });
     }
 
+    /**
+     * Rebuilds and displays the league standings table.
+     *
+     * @param league the league to update
+     */
     public static void displayLeagueTable(League league) {
         List<LeagueTableEntry> table = buildLeagueTable(league);
         UIPrinter.displayLeagueTable(table);
     }
 
+    /**
+     * Builds the league table from all played matches.
+     *
+     * @param league the league to evaluate
+     * @return sorted list of league table entries
+     */
     public static List<LeagueTableEntry> buildLeagueTable(League league) {
         Map<String, LeagueTableEntry> table = new HashMap<>();
 
+        // Create table entries for each team
         for (Team team : league.getTeams()) {
             table.put(team.getName(), new LeagueTableEntry(team));
         }
 
+        // Apply match results
         for (Match match : league.getMatches()) {
             if (!match.isPlayed()) continue;
 
@@ -91,6 +123,7 @@ public class MatchSimulator {
             table.get(away.getName()).recordResult(homeScore, awayScore, false);
         }
 
+        // Sort by points descending
         return table.values().stream()
                 .sorted(Comparator.comparingInt(LeagueTableEntry::getPoints).reversed())
                 .toList();

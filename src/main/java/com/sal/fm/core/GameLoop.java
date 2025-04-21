@@ -1,26 +1,28 @@
 package com.sal.fm.core;
 
 import com.sal.fm.config.MatchConfig;
-import com.sal.fm.core.MatchSimulator;
-import com.sal.fm.core.SaveManager;
 import com.sal.fm.model.GameState;
-import com.sal.fm.model.league.League;
 import com.sal.fm.model.league.LeagueTableEntry;
-import com.sal.fm.model.Match;
-import com.sal.fm.model.team.Team;
-
 import com.sal.fm.util.DebugTools;
-import com.sal.fm.util.JsonUtil;
 
-import java.util.*;
+import java.util.List;
+import java.util.Scanner;
 
+/**
+ * Main game loop that handles user input, match progression,
+ * viewing schedules, teams, and league standings.
+ */
 public class GameLoop {
 
     private final Scanner scanner = new Scanner(System.in);
     private GameState gameState;
 
+    /**
+     * Starts the main game loop. Handles loading or initializing game state,
+     * then provides a text-based interface to interact with the simulation.
+     */
     public void start() {
-        // Load or create game state
+        // Load game if save exists, otherwise initialize a new one
         if (SaveHelper.hasSave()) {
             System.out.println("Loading saved game...");
             gameState = SaveHelper.load();
@@ -30,7 +32,7 @@ public class GameLoop {
             SaveHelper.save(gameState);
         }
 
-        // Main loop
+        // Main interaction loop
         boolean running = true;
         while (running) {
             System.out.println("\n==== Football Match Engine ====");
@@ -65,11 +67,15 @@ public class GameLoop {
         }
     }
 
+    /**
+     * Advances the simulation by one day. Triggers a matchday every N days.
+     */
     private void handleNextTurn() {
         int currentDay = gameState.getCurrentDay() + 1;
         gameState.setCurrentDay(currentDay);
         System.out.println("New day: " + currentDay);
 
+        // Trigger matchday if interval reached
         if (currentDay - gameState.getLastMatchdayDay() >= MatchConfig.DAYS_BETWEEN_MATCHDAYS) {
             int matchday = gameState.getCurrentMatchday();
             System.out.println("Matchday " + matchday + " begins!");
@@ -79,18 +85,30 @@ public class GameLoop {
         }
     }
 
+    /**
+     * Displays upcoming or played matches for the current matchday.
+     */
     private void handleShowSchedule() {
         UIPrinter.showMatchdaySchedule(gameState.getLeague().getMatches(), gameState.getCurrentMatchday());
     }
 
+    /**
+     * Displays all teams in the league with their tactics.
+     */
     private void handleListTeams() {
         TeamManager.listTeams(gameState.getLeague().getTeams());
     }
 
+    /**
+     * Allows the user to view or regenerate players for a specific team.
+     */
     private void handleManageTeam() {
         TeamManager.manageTeam(gameState, scanner);
     }
 
+    /**
+     * Displays the current league standings in table format.
+     */
     private void handleShowTable() {
         List<LeagueTableEntry> table = MatchSimulator.buildLeagueTable(gameState.getLeague());
         UIPrinter.displayLeagueTable(table);

@@ -10,8 +10,18 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Scanner;
 
+/**
+ * Handles team-related operations during gameplay.
+ * Includes generating players, listing teams, and showing lineups.
+ */
 public class TeamManager {
 
+    /**
+     * Allows user to manage a team: generate new players or view current lineup.
+     *
+     * @param state   the current game state
+     * @param scanner scanner for user input
+     */
     public static void manageTeam(GameState state, Scanner scanner) {
         List<Team> teams = state.getLeague().getTeams();
 
@@ -33,6 +43,7 @@ public class TeamManager {
 
         switch (action) {
             case 1 -> {
+                // Replace existing players with a new randomized squad
                 team.getPlayers().clear();
                 PlayerGenerator.generateTeamPlayers().forEach(team::addPlayer);
                 LineupBuilder.generateLineup(team);
@@ -43,6 +54,11 @@ public class TeamManager {
         }
     }
 
+    /**
+     * Prints all teams in the league along with their tactics.
+     *
+     * @param teams list of teams
+     */
     public static void listTeams(List<Team> teams) {
         System.out.println("\n=== League Teams ===");
         for (int i = 0; i < teams.size(); i++) {
@@ -51,6 +67,11 @@ public class TeamManager {
         }
     }
 
+    /**
+     * Displays the full player roster, starting lineup, and substitutes of a team.
+     *
+     * @param team the team to display
+     */
     private static void printLineup(Team team) {
         List<Player> all = team.getPlayers();
         List<Player> starters = team.getStartingLineup();

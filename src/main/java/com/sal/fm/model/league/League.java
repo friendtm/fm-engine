@@ -6,18 +6,31 @@ import com.sal.fm.model.team.Team;
 import java.util.*;
 
 /**
- * Represents a League containing a set of teams and a generated season schedule.
+ * Represents a League containing exactly 12 teams and a generated
+ * season schedule of 22 rounds (double round-robin).
+ *
+ * Each team plays every other team twice: once home, once away.
  */
 public class League {
+
     private List<Team> teams;
     private List<Match> matches;
 
-    // Required by Jackson
+    /**
+     * Default constructor required by Jackson for deserialization.
+     */
     public League() {
         this.teams = new ArrayList<>();
         this.matches = new ArrayList<>();
     }
 
+    /**
+     * Constructs a League with a given set of 12 teams.
+     * Automatically generates the full season calendar (22 matchdays).
+     *
+     * @param teams List of exactly 12 teams
+     * @throws IllegalArgumentException if the team count is not 12
+     */
     public League(List<Team> teams) {
         if (teams.size() != 12) {
             throw new IllegalArgumentException("League must have exactly 12 teams.");
@@ -36,9 +49,10 @@ public class League {
     }
 
     /**
-     * Generates the full season calendar (22 rounds):
-     * - Run 1: each team plays all others once (random home/away)
-     * - Run 2: same matchups, reverse venues
+     * Generates a 22-round double round-robin schedule using a round-robin algorithm.
+     *
+     * - Run 1: each team plays all others once (home/away randomized)
+     * - Run 2: same matchups with reversed home/away
      */
     private void generateCalendar() {
         int numTeams = teams.size();
@@ -47,14 +61,14 @@ public class League {
             throw new IllegalArgumentException("Number of teams must be even.");
         }
 
-        // Clone teams for rotation and fix the first team
         List<Team> rotation = new ArrayList<>(teams);
-        Team fixedTeam = rotation.remove(0); // Fixed position
+        Team fixedTeam = rotation.remove(0); // One team is fixed in the rotation
         int totalRounds = numTeams - 1;
         int matchesPerRound = numTeams / 2;
 
         matches.clear();
 
+        // == First Run ==
         for (int round = 0; round < totalRounds; round++) {
             Set<Team> usedInRound = new HashSet<>();
 
@@ -62,6 +76,7 @@ public class League {
                 Team home, away;
 
                 if (matchIndex == 0) {
+                    // Alternate fixed team as home/away to balance
                     home = (round % 2 == 0) ? fixedTeam : rotation.get(round % rotation.size());
                     away = (round % 2 == 0) ? rotation.get(round % rotation.size()) : fixedTeam;
                 } else {
@@ -72,24 +87,24 @@ public class League {
                     away = rotation.get(secondIndex);
                 }
 
-                // Create match for run 1
                 Match match = new Match(home, away);
                 match.setRound(round + 1);
                 matches.add(match);
             }
         }
 
-        // Mirror matches to create run 2
+        // == Second Run: Mirror fixtures (swap home/away) ==
         List<Match> run2 = matches.stream()
                 .map(m -> {
                     Match reversed = new Match(m.getAwayTeam(), m.getHomeTeam());
                     reversed.setRound(m.getRound() + totalRounds);
                     return reversed;
-                }).toList();
+                })
+                .toList();
 
         matches.addAll(run2);
 
-        // ✅ Final check for duplicate teams in any round
+        // == Validation: Ensure no duplicate team per round ==
         for (int r = 1; r <= totalRounds * 2; r++) {
             final int roundNumber = r;
             Set<Team> used = new HashSet<>();
