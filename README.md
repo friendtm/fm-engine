@@ -1,34 +1,34 @@
-# ⚽ Football Match Engine Simulation
+# Football Match Engine Simulation
 
-A full-featured football (futsal-style) match simulation engine written in Java.  
-Simulates realistic matches between AI teams, featuring tactical formations, player attributes, duels, league progression, and save/load support.
+A mini football (futsal-style) match simulation engine written in Java.  
+Simulates realistic matches between AI teams, featuring simple tactical formations, player attributes, duels, league progression, and save/load support.
 
 ---
 
-## 🚀 Features
+## Features
 
-- 🧠 **Stat-driven simulation engine**
+- **Stat-driven simulation engine**
     - Technical, Physical, Mental, and Goalkeeping attributes
     - Context-aware duels (pass, tackle, shot on goal)
-- 🏟️ **Tactical formations**
+- **Tactical formations**
     - Supports **DIAMOND** and **SQUARE** tactics with intelligent lineup selection
-- 🔁 **League system**
+- **League system**
     - 12 teams
     - 22 matchdays (home/away double round-robin)
-- 🗓️ **Match calendar**
+- **Match calendar**
     - Configurable match spacing (e.g. every 2 days)
     - Auto-scheduling with validation
-- 📊 **League table tracking**
+- **League table tracking**
     - Wins, draws, losses, goals for/against, points
-- 💾 **Save/load support**
+- **Save/load support**
     - Stores full simulation state to JSON (`/saves/save.json`)
-- 🧪 **Debug mode**
+- **Debug mode**
     - Detailed duel logging
     - Match logs saved to file
 
 ---
 
-## 🧱 Project Structure
+## Project Structure
 
 The codebase is modular and organized by responsibility, following clean architecture principles:
 
@@ -46,21 +46,21 @@ The codebase is modular and organized by responsibility, following clean archite
 
 ---
 
-## 🧩 Attribute System
+## Attribute System
 
 Players are generated with a deep stat system:
 
-- 🎯 **Technical**: passing, shooting, dribbling, tackling...
-- 💪 **Physical**: pace, stamina, strength, agility...
-- 🧤 **Goalkeeping**: reflexes, one-on-ones, communication...
-- 🧠 **Mental**: composure, positioning, anticipation, flair...
-- 🎭 **Hidden**: professionalism, leadership, pressure handling...
+- **Technical**: passing, shooting, dribbling, tackling...
+- **Physical**: pace, stamina, strength, agility...
+- **Goalkeeping**: reflexes, one-on-ones, communication...
+- **Mental**: composure, positioning, anticipation, flair...
+- **Hidden**: professionalism, leadership, pressure handling...
 
 Each position (FIXO, WINGER, PIVOT, GOALKEEPER) has its own stat profile.
 
 ---
 
-## 🔁 Simulation Cycle
+## Simulation Cycle
 
 Each match consists of 40 minutes simulated in two halves (20 + 20).  
 Every minute can result in:
@@ -71,7 +71,7 @@ Duels are resolved based on weighted stats and randomness.
 
 ---
 
-## 💾 Save System
+## Save System
 
 - Game state is automatically saved to `saves/save.json`
 - Save/load is handled via `SaveHelper` and `JsonUtil`
@@ -79,7 +79,7 @@ Duels are resolved based on weighted stats and randomness.
 
 ---
 
-## 🧪 Debug Mode
+## Debug Mode
 
 Enable debug mode to see detailed logs for:
 - Each pass and tackle duel
@@ -88,16 +88,16 @@ Enable debug mode to see detailed logs for:
 
 ---
 
-## 📚 Documentation
+## Documentation
 
-- [🧱 Project Structure](docs/project-structure.md)
-- [🧠 Match Engine](docs/match-engine.md)
-- [🎯 Player Attributes](docs/player-attributes.md)
-- [💾 Save System](docs/save-system.md)
+- [Project Structure](docs/project-structure.md)
+- [Match Engine](docs/match-engine.md)
+- [Player Attributes](docs/player-attributes.md)
+- [Save System](docs/save-system.md)
 
 ---
 
-## 🕹️ Running the Simulation
+## Running the Simulation
 
 ### Requirements:
 - Java 17+
